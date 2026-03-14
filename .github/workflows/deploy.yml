@@ -1,0 +1,50 @@
+name: Build & Deploy to Netlify
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # allows manual trigger from GitHub UI
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: client/package-lock.json
+
+      - name: Install dependencies
+        working-directory: client
+        run: npm install
+
+      - name: Build React app
+        working-directory: client
+        run: npm run build
+        env:
+          CI: false  # prevents treating warnings as errors
+
+      - name: Copy Netlify functions into build area
+        run: |
+          mkdir -p client/build/netlify/functions
+          cp -r netlify/functions/* client/build/netlify/functions/ 2>/dev/null || true
+
+      - name: Deploy to Netlify
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+        run: |
+          npm install -g netlify-cli
+          netlify deploy \
+            --auth "$NETLIFY_AUTH_TOKEN" \
+            --site "$NETLIFY_SITE_ID" \
+            --dir client/build \
+            --functions netlify/functions \
+            --prod \
+            --message "Deploy from GitHub Actions ($(git log -1 --pretty=%s))"
