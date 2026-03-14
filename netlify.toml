@@ -1,0 +1,24 @@
+[build]
+  base    = "client"
+  command = "npm install && npm run build"
+  publish = "build"
+
+[functions]
+  directory = "netlify/functions"
+
+# Proxy /api/* → Netlify Functions (so client code never changes between dev and prod)
+[[redirects]]
+  from   = "/api/ads"
+  to     = "/.netlify/functions/ads"
+  status = 200
+
+[[redirects]]
+  from   = "/api/health"
+  to     = "/.netlify/functions/ads"
+  status = 200
+
+# React Router — send all other routes to index.html
+[[redirects]]
+  from   = "/*"
+  to     = "/index.html"
+  status = 200
